@@ -75,8 +75,8 @@ def test_guess_by_bom(encoding, expected):
 def test_parse_header_links(value, expected):
     links = httpx.Response(200, headers={"link": value}).links
     if links:
-        links = links.values()
-        assert all(link in links for link in expected)
+        all_links = list(links.values())
+        assert all(link in all_links for link in expected)
     else:
         assert not expected
 
