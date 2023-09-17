@@ -1,3 +1,4 @@
+import httpcore
 import logging
 import os
 import random
@@ -5,7 +6,6 @@ import random
 import certifi
 import pytest
 
-import httpcore
 import httpx
 from httpx._utils import (  # see https://github.com/encode/httpx/issues/2492
     get_ca_bundle_from_env,  # only available in `httpx.create_ssl_context()` (with exception handling)
