@@ -6,15 +6,12 @@ import certifi
 import pytest
 
 import httpx
-from httpx._utils import (
-    URLPattern,
-    get_ca_bundle_from_env,
-    get_environment_proxies,
-    guess_json_utf,
-    is_https_redirect,
-    obfuscate_sensitive_headers,
-    parse_header_links,
-    same_origin,
+from httpx._utils import (  # see https://github.com/encode/httpx/issues/2492
+    get_ca_bundle_from_env,  # only available in `httpx.create_ssl_context()` (with exception handling)
+    get_environment_proxies,  # only available in `Client._mounts`
+    guess_json_utf,  # not available
+    is_https_redirect,  # only availble by check `Authorization` header removed
+    same_origin,  # only available in Client._redirect_headers
 )
 
 from .common import TESTS_DIR
@@ -76,7 +73,9 @@ def test_guess_by_bom(encoding, expected):
     ),
 )
 def test_parse_header_links(value, expected):
-    assert parse_header_links(value) == expected
+    links = httpx.Response(200, headers={"link": value}).links.values()
+    for link in expected:
+        assert link in links
 
 
 def test_logging_request(server, caplog):
@@ -208,10 +207,9 @@ def test_get_environment_proxies(environment, proxies):
     ],
 )
 def test_obfuscate_sensitive_headers(headers, output):
-    bytes_headers = [(k.encode(), v.encode()) for k, v in headers]
-    bytes_output = [(k.encode(), v.encode()) for k, v in output]
-    assert list(obfuscate_sensitive_headers(headers)) == output
-    assert list(obfuscate_sensitive_headers(bytes_headers)) == bytes_output
+    as_dict = {k: v for k, v in output}
+    headers_class = httpx.Headers({k: v for k, v in headers})
+    assert repr(headers_class) == f"Headers({as_dict!r})"
 
 
 def test_same_origin():
@@ -262,21 +260,26 @@ def test_is_not_https_redirect_if_not_default_ports():
     ],
 )
 def test_url_matches(pattern, url, expected):
-    pattern = URLPattern(pattern)
+    client = httpx.Client(mounts={pattern: httpx.BaseTransport()})
+    pattern = next(iter(client._mounts))
     assert pattern.matches(httpx.URL(url)) == expected
 
 
 def test_pattern_priority():
     matchers = [
-        URLPattern("all://"),
-        URLPattern("http://"),
-        URLPattern("http://example.com"),
-        URLPattern("http://example.com:123"),
+        "all://",
+        "http://",
+        "http://example.com",
+        "http://example.com:123",
     ]
     random.shuffle(matchers)
-    assert sorted(matchers) == [
-        URLPattern("http://example.com:123"),
-        URLPattern("http://example.com"),
-        URLPattern("http://"),
-        URLPattern("all://"),
+
+    transport = httpx.BaseTransport()
+    client = httpx.Client(mounts={m: transport for m in matchers})
+
+    assert [pat.pattern for pat in client._mounts] == [
+        "http://example.com:123",
+        "http://example.com",
+        "http://",
+        "all://",
     ]
