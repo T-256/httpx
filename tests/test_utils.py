@@ -1,9 +1,9 @@
-import httpcore
 import logging
 import os
 import random
 
 import certifi
+import httpcore
 import pytest
 
 import httpx
