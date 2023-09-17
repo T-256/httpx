@@ -769,7 +769,7 @@ class Response:
         """
         header = self.headers.get("link")
         ldict = {}
-        if header:
+        if header is not None:
             links = parse_header_links(header)
             for link in links:
                 key = link.get("rel") or link.get("url")
