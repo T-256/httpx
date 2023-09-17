@@ -206,7 +206,9 @@ def test_get_environment_proxies(environment, proxies):
             assert expected is None
         else:
             assert isinstance(transport, httpx.HTTPTransport)
-            assert isinstance(transport._pool, (httpcore.HTTPProxy, httpcore.SOCKSProxy))
+            assert isinstance(
+                transport._pool, (httpcore.HTTPProxy, httpcore.SOCKSProxy)
+            )
             proxy_url = transport._pool._proxy_url
 
             assert proxy_url.scheme == expected.url.raw_scheme
