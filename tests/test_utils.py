@@ -238,7 +238,7 @@ def test_same_origin():
     client = httpx.Client()
     headers = client._redirect_headers(request, origin, "GET")
 
-    assert headers["Host"] == origin.netloc.decode("ascii")
+    assert headers["Host"] == request.url.netloc.decode("ascii")
 
 
 def test_not_same_origin():
@@ -248,7 +248,7 @@ def test_not_same_origin():
     client = httpx.Client()
     headers = client._redirect_headers(request, origin, "GET")
 
-    assert headers["Host"] != origin.netloc.decode("ascii")
+    assert headers["Host"] == origin.netloc.decode("ascii")
 
 
 def test_is_https_redirect():
