@@ -205,6 +205,8 @@ def test_get_environment_proxies(environment, proxies):
         if transport is None:
             assert expected is None
         else:
+            assert expected is not None
+
             assert isinstance(transport, httpx.HTTPTransport)
             assert isinstance(
                 transport._pool, (httpcore.HTTPProxy, httpcore.SOCKSProxy)
