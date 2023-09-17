@@ -73,8 +73,11 @@ def test_guess_by_bom(encoding, expected):
     ),
 )
 def test_parse_header_links(value, expected):
-    links = httpx.Response(200, headers={"link": value}).links.values()
-    assert all(link in links for link in expected)
+    links = httpx.Response(200, headers={"link": value}).links
+    if not links:
+        assert not expected
+    else:
+        assert all(link in links for link in expected.values())
 
 
 def test_logging_request(server, caplog):
