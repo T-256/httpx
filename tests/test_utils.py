@@ -240,6 +240,7 @@ def test_same_origin():
 
     assert headers["Host"] == origin.netloc.decode("ascii")
 
+
 def test_not_same_origin():
     origin = httpx.URL("https://example.com")
     request = httpx.Request("GET", "HTTP://EXAMPLE.COM:80")
