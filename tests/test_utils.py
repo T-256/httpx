@@ -74,8 +74,7 @@ def test_guess_by_bom(encoding, expected):
 )
 def test_parse_header_links(value, expected):
     links = httpx.Response(200, headers={"link": value}).links.values()
-    for link in expected:
-        assert link in links
+    assert all(link in links for link in expected)
 
 
 def test_logging_request(server, caplog):
