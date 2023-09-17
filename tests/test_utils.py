@@ -8,7 +8,6 @@ import pytest
 import httpx
 from httpx._utils import (  # see https://github.com/encode/httpx/issues/2492
     get_ca_bundle_from_env,  # only available in `httpx.create_ssl_context()` (with exception handling)
-    get_environment_proxies,  # only available in `Client._mounts`
     guess_json_utf,  # not available
     is_https_redirect,  # only availble by check `Authorization` header removed
     same_origin,  # only available in Client._redirect_headers
@@ -192,9 +191,24 @@ def test_get_ssl_cert_file():
     ],
 )
 def test_get_environment_proxies(environment, proxies):
-    os.environ.update(environment)
+    as_classes = {
+        pattern: None if proxy is None else httpx.Proxy(url=proxy)
+        for pattern, proxy in proxies.items()
+    }
 
-    assert get_environment_proxies() == proxies
+    os.environ.update(environment)
+    client = httpx.Client()
+
+    for pat, transport in client._mounts.items():
+        expected = as_classes[pat.pattern]
+        if expected is None:
+            assert transport is None
+        else:
+            proxy_url = transport._pool._proxy_url
+            assert proxy_url.scheme == expected.url.raw_scheme
+            assert proxy_url.host == expected.url.raw_host
+            assert proxy_url.port == expected.url.port
+            assert proxy_url.target == expected.url.raw_path
 
 
 @pytest.mark.parametrize(
