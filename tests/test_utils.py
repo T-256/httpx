@@ -77,7 +77,6 @@ def test_parse_header_links(value, expected):
     assert all(link in all_links for link in expected)
 
 
-
 def test_logging_request(server, caplog):
     caplog.set_level(logging.INFO)
     with httpx.Client() as client:
