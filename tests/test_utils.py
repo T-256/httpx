@@ -10,7 +10,6 @@ import httpx
 from httpx._utils import (  # see https://github.com/encode/httpx/issues/2492
     get_ca_bundle_from_env,  # only available in `httpx.create_ssl_context()` (with exception handling)
     guess_json_utf,  # not available
-    is_https_redirect,  # only availble by check `Authorization` header removed
 )
 
 from .common import TESTS_DIR
@@ -239,8 +238,7 @@ def test_same_origin():
     client = httpx.Client()
     headers = client._redirect_headers(request, origin, "GET")
 
-    assert headers["Host"] == "example.com:443"
-
+    assert headers["Host"] == origin.netloc.decode("ascii")
 
 def test_not_same_origin():
     origin = httpx.URL("https://example.com")
@@ -249,25 +247,43 @@ def test_not_same_origin():
     client = httpx.Client()
     headers = client._redirect_headers(request, origin, "GET")
 
-    assert headers["Host"] == "example.com"
+    assert headers["Host"] != origin.netloc.decode("ascii")
 
 
 def test_is_https_redirect():
-    url = httpx.URL("http://example.com")
-    location = httpx.URL("https://example.com")
-    assert is_https_redirect(url, location)
+    url = httpx.URL("https://example.com")
+    request = httpx.Request(
+        "GET", "http://example.com", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" in headers
 
 
 def test_is_not_https_redirect():
-    url = httpx.URL("http://example.com")
-    location = httpx.URL("https://www.example.com")
-    assert not is_https_redirect(url, location)
+    url = httpx.URL("https://www.example.com")
+    request = httpx.Request(
+        "GET", "http://example.com", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" not in headers
 
 
 def test_is_not_https_redirect_if_not_default_ports():
-    url = httpx.URL("http://example.com:9999")
-    location = httpx.URL("https://example.com:1337")
-    assert not is_https_redirect(url, location)
+    url = httpx.URL("https://example.com:1337")
+    request = httpx.Request(
+        "GET", "http://example.com:9999", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" not in headers
 
 
 @pytest.mark.parametrize(
