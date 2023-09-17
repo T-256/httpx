@@ -201,10 +201,12 @@ def test_get_environment_proxies(environment, proxies):
 
     for pat, transport in client._mounts.items():
         expected = as_classes[pat.pattern]
-        if expected is None:
-            assert transport is None
+        if transport is None:
+            assert expected is None
         else:
+            assert isinstance(transport, httpx.HTTPTransport)
             proxy_url = transport._pool._proxy_url
+
             assert proxy_url.scheme == expected.url.raw_scheme
             assert proxy_url.host == expected.url.raw_host
             assert proxy_url.port == expected.url.port
