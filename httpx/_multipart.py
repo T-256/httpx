@@ -189,7 +189,12 @@ class FileField:
             chunk = self.file.read(self.CHUNK_SIZE)
 
     async def arender_data(self) -> typing.AsyncIterator[bytes]:
-        if not isinstance(self.file, AsyncIterable):
+        if isinstance(self.file, io.BytesIO):
+            raise TypeError(
+                "Invalid type for file. 'io.BytesIO' is not supported "
+                "when using AsyncClient."
+            )
+        if not isinstance(self.file, AsyncByteStream):
             for chunk in self.render_data():
                 yield chunk
             return

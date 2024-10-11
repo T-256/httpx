@@ -87,6 +87,28 @@ async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
             await client.post(url, files=files)
 
 
+async def test_async_multipart_bytes(tmp_path, server, anyio_backend):
+    url = server.url.copy_with(path="/echo_body")
+    async with httpx.AsyncClient() as client:
+        files = {"file": io.BytesIO(b"<file content>")}
+        response = await client.post(url, files=files)
+        boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+        boundary_bytes = boundary.encode("ascii")
+
+        assert response.status_code == 200
+        assert response.content == b"".join(
+            [
+                b"--" + boundary_bytes + b"\r\n",
+                b'Content-Disposition: form-data; name="file";'
+                b' filename="test.txt"\r\n',
+                b"Content-Type: text/plain\r\n",
+                b"\r\n",
+                b"<file content>\r\n",
+                b"--" + boundary_bytes + b"--\r\n",
+            ]
+        )
+
+
 @pytest.mark.parametrize(
     "header",
     [
